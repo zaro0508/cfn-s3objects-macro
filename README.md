@@ -1,88 +1,141 @@
-# lambda-template
-Template for creating lambda repositories
-A template for quickly starting a new AWS lambda project.
+# How to install and use the S3Objects macro in your AWS account
 
-## Naming
-Naming conventions:
-* for a vanilla Lambda: `lambda-<context>`
-* for a Cloudformation Transform macro: `cfn-macro-<context>`
-* for a Cloudformation Custom Resource: `cfn-cr-<context>`
+The `S3Objects` macro adds a new resource type: `AWS::S3::Object` which you can use to populate an S3 bucket.
 
-## Development
+You can either create new S3 objects or copy S3 buckets from other buckets that you have permissions to access.
 
-### Contributions
-Contributions are welcome.
+As with any other CloudFormation resource, if you delete a stack containing S3 objects defined with this macro, those objects will be deleted.
 
-### Requirements
-Run `pipenv install --dev` to install both production and development
-requirements, and `pipenv shell` to activate the virtual environment. For more
-information see the [pipenv docs](https://pipenv.pypa.io/en/latest/).
+A typical use case for this macro might be, for example, to populate an S3 website with static assets.
 
-After activating the virtual environment, run `pre-commit install` to install
-the [pre-commit](https://pre-commit.com/) git hook.
+## Deploying
 
-### Create a local build
+1. You will need an S3 bucket to store the CloudFormation artifacts:
+    * If you don't have one already, create one with `aws s3 mb s3://<bucket name>`
 
-```shell script
-$ sam build --use-container
-```
+2. Package the CloudFormation template. The provided template uses [the AWS Serverless Application Model](https://aws.amazon.com/about-aws/whats-new/2016/11/introducing-the-aws-serverless-application-model/) so must be transformed before you can deploy it.
 
-### Run locally
+    ```shell
+    aws cloudformation package \
+        --template-file macro.template \
+        --s3-bucket <your bucket name here> \
+        --output-template-file packaged.template
+    ```
 
-```shell script
-$ sam local invoke HelloWorldFunction --event events/event.json
-```
+3. Deploy the packaged CloudFormation template to a CloudFormation stack:
 
-### Run unit tests
-Tests are defined in the `tests` folder in this project. Use PIP to install the
-[pytest](https://docs.pytest.org/en/latest/) and run unit tests.
+    ```shell
+    aws cloudformation deploy \
+        --stack-name s3objects-macro \
+        --template-file packaged.template \
+        --capabilities CAPABILITY_IAM
+    ```
 
-```shell script
-$ python -m pytest tests/ -v
-```
+4. To test out the macro's capabilities, try launching the provided example template:
 
-## Deployment
+    ```shell
+    aws cloudformation deploy \
+        --stack-name s3objects-macro-example \
+        --template-file example.template \
+        --capabilities CAPABILITY_IAM
+    ```
 
-### Build
+## Usage
 
-```shell script
-sam build
-```
+To make use of the macro, add `Transform: S3Objects` to the top level of your CloudFormation template.
 
-## Deploy Lambda to S3
-This requires the correct permissions to upload to bucket
-`bootstrap-awss3cloudformationbucket-19qromfd235z9` and
-`essentials-awss3lambdaartifactsbucket-x29ftznj6pqw`
+Here is a trivial example template:
 
-```shell script
-sam package --template-file .aws-sam/build/template.yaml \
-  --s3-bucket essentials-awss3lambdaartifactsbucket-x29ftznj6pqw \
-  --output-template-file .aws-sam/build/lambda-template.yaml
-
-aws s3 cp .aws-sam/build/lambda-template.yaml s3://bootstrap-awss3cloudformationbucket-19qromfd235z9/lambda-template/master/
-```
-
-## Install Lambda into AWS
-Create the following [sceptre](https://github.com/Sceptre/sceptre) file
-
-config/prod/lambda-template.yaml
 ```yaml
-template_path: "remote/lambda-template.yaml"
-stack_name: "lambda-template"
-stack_tags:
-  Department: "Platform"
-  Project: "Infrastructure"
-  OwnerEmail: "it@sagebase.org"
-hooks:
-  before_launch:
-    - !cmd "curl https://s3.amazonaws.com/bootstrap-awss3cloudformationbucket-19qromfd235z9/lambda-template/master/lambda-template.yaml --create-dirs -o templates/remote/lambda-template.yaml"
+Transform: S3Objects
+Resources:
+  Bucket:
+    Type: AWS::S3::Bucket
+
+  Object:
+    Type: AWS::S3::Object
+    Properties:
+      Target:
+        Bucket: !Ref Bucket
+        Key: README.md
+        ContentType: text/plain
+      Body: Hello, world!
 ```
 
-Install the lambda using sceptre:
-```shell script
-sceptre --var "profile=my-profile" --var "region=us-east-1" launch prod/lambda-template.yaml
+## Features
+
+### Creating a new S3 object
+
+To create a new S3 object, add an `AWS::S3::Object` resource to your template and specify the `Target` and `Body` properties. For example:
+
+```yaml
+NewObject:
+  Type: AWS::S3::Object
+  Properties:
+    Target:
+      Bucket: !Ref TargetBucket
+      Key: README.md
+    Body: |
+      # My text file
+
+      This is my text file;
+      there are many like it,
+      but this one is mine.
 ```
+
+The `Target` property has the following sub-properties:
+
+* `Bucket` (REQUIRED): The name of the bucket that will store the new object
+
+* `Key` (REQUIRED): The location within the bucket
+
+* `ACL` (OPTIONAL - Default `private`): Sets a [canned ACL](https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl) for the new object
+
+The following sub-properties also apply if you are creating a new object (but not if you are copying an object from another S3 bucket):
+
+* `ContentType` (OPTIONAL): Sets a custom content type for the new object
+
+The `Body` property simply takes a string which will be used to populate the new object.
+
+### Creating a new S3 object from binary data
+
+You can create a binary file by using the `Base64Body` property and supplying your content base64-encoded. For example:
+
+```yaml
+SinglePixel:
+  Type: AWS::S3::Object
+  Properties:
+    Target:
+      Bucket: !Ref TargetBucket
+      Key: 1pixel.gif
+    Base64Body: R0lGODdhAQABAIABAP///0qIbCwAAAAAAQABAAACAkQBADs=
+```
+
+### Copying an S3 object from another bucket
+
+To copy an S3 object, you need to specify the `Source` property as well as the `Target`. For example:
+
+```yaml
+CopiedObject:
+  Type: AWS::S3::Object
+  Properties:
+    Source:
+      Bucket: !Ref SourceBucket
+      Key: index.html
+    Target:
+      Bucket: !Ref TargetBucket
+      Key: index.html
+      ACL: public-read
+```
+
+The `Source` property has the following sub-properties:
+
+* `Bucket` (REQUIRED): The bucket to copy from
+
+* `Key` (REQUIRED): The key of the S3 object that will be copied
 
 ## Author
 
-Your Name Here.
+[Steve Engledow](https://linkedin.com/in/stilvoid)
+Senior Solutions Builder
+Amazon Web Services
