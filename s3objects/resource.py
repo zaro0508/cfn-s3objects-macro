@@ -34,7 +34,7 @@ def sendResponse(event, context, status, message):
             "Bucket": bucket,
             "Key": key,
         },
-    })
+    }).encode('utf-8')
 
     request = Request(event['ResponseURL'], data=body)
     request.add_header('Content-Type', '')
