@@ -11,10 +11,10 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-from urllib2 import build_opener, HTTPHandler, Request
+from urllib.request import build_opener, HTTPHandler, Request
 import base64
 import boto3
-import httplib
+import http.client
 import json
 
 s3_client = boto3.client("s3")
@@ -45,7 +45,7 @@ def sendResponse(event, context, status, message):
     response = opener.open(request)
 
 def handler(event, context):
-    print("Received request:", json.dumps(event, indent=4))
+    print(("Received request:", json.dumps(event, indent=4)))
 
     request = event["RequestType"]
     properties = event["ResourceProperties"]

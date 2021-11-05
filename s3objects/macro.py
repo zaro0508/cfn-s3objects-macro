@@ -21,7 +21,7 @@ s3_client = boto3.client("s3")
 def handle_template(request_id, template):
     new_resources = {}
 
-    for name, resource in template.get("Resources", {}).items():
+    for name, resource in list(template.get("Resources", {}).items()):
         if resource["Type"] == "AWS::S3::Object":
             props = resource["Properties"]
 
@@ -53,7 +53,7 @@ def handle_template(request_id, template):
                 "Properties": resource_props,
             }
 
-    for name, resource in new_resources.items():
+    for name, resource in list(new_resources.items()):
         template["Resources"][name] = resource
 
     return template
