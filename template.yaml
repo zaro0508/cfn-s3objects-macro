@@ -1,4 +1,4 @@
-# From https://github.com/awslabs/aws-cloudformation-templates/tree/master/aws/services/CloudFormation/MacrosExamples/S3Objects
+# From https://github.com/aws-cloudformation/aws-cloudformation-macros/tree/master/S3Objects
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: A Cloudformation macro to deploy objects to S3 buckets
