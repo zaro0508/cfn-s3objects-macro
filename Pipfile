@@ -6,7 +6,6 @@ verify_ssl = true
 [dev-packages]
 pytest = "~=6.0"
 pytest-mock = "~=3.3"
-pre-commit = "~=2.7"
 boto3 = "~=1.17"
 
 [requires]
