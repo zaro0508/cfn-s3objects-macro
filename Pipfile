@@ -4,15 +4,9 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
-pylint = "*"
-pytest = "*"
-pytest-mock = "*"
-pre-commit = "*"
-
-[packages]
-aws-sam-cli = "*"
-boto3 = "*"
-botocore = "*"
+pytest = "~=6.0"
+pytest-mock = "~=3.3"
+boto3 = "~=1.17"
 
 [requires]
 python_version = "3.8"
