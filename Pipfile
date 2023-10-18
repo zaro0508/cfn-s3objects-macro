@@ -7,6 +7,7 @@ verify_ssl = true
 pytest = "~=6.0"
 pytest-mock = "~=3.3"
 boto3 = "~=1.17"
+coverage = "~=7.0"
 
 [requires]
 python_version = "3.8"
