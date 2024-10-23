@@ -10,4 +10,4 @@ boto3 = "~=1.17"
 coverage = "~=7.0"
 
 [requires]
-python_version = "3.8"
+python_version = "3.11"
