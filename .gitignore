@@ -136,3 +136,6 @@ dmypy.json
 
 # generated dynamically from Pipfile
 s3objects/requirements.txt
+
+# mac files
+.DS_Store
